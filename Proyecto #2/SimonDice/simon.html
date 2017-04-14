@@ -1,46 +1,158 @@
 <html>
   <head>
     <title>Simon Dice</title>
+    <meta charset="utf-8" />
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="sweetAlert/dist/sweetalert.css">
     <link rel="stylesheet" href="simon.css">
+    <!--http://t4t5.github.io/sweetalert/ -->
   </head>
   <body>
     <div class="keyboard">
       <div class="row">
-        <div class="key">q</div>
-        <div class="key">w</div>
-        <div class="key">e</div>
-        <div class="key">r</div>
-        <div class="key">t</div>
-        <div class="key">y</div>
-        <div class="key">u</div>
-        <div class="key">i</div>
-        <div class="key">o</div>
-        <div class="key">p</div>
+        <div class="key" data-key="81">q</div>
+        <div class="key" data-key="87">w</div>
+        <div class="key" data-key="69">e</div>
+        <div class="key" data-key="82">r</div>
+        <div class="key" data-key="84">t</div>
+        <div class="key" data-key="89">y</div>
+        <div class="key" data-key="85">u</div>
+        <div class="key" data-key="73">i</div>
+        <div class="key" data-key="79">o</div>
+        <div class="key" data-key="80">p</div>
       </div>
       <div class="row">
-        <div class="key">a</div>
-        <div class="key">s</div>
-        <div class="key">d</div>
-        <div class="key">f</div>
-        <div class="key">g</div>
-        <div class="key">h</div>
-        <div class="key">j</div>
-        <div class="key">k</div>
-        <div class="key">l</div>
+        <div class="key" data-key="65">a</div>
+        <div class="key" data-key="83">s</div>
+        <div class="key" data-key="68">d</div>
+        <div class="key" data-key="70">f</div>
+        <div class="key" data-key="71">g</div>
+        <div class="key" data-key="72">h</div>
+        <div class="key" data-key="74">j</div>
+        <div class="key" data-key="75">k</div>
+        <div class="key" data-key="76">l</div>
       </div>
       <div class="row last">
-        <div class="key">z</div>
-        <div class="key">x</div>
-        <div class="key">c</div>
-        <div class="key">v</div>
-        <div class="key">b</div>
-        <div class="key">n</div>
-        <div class="key">m</div>
+        <div class="key" data-key="90">z</div>
+        <div class="key" data-key="88">x</div>
+        <div class="key" data-key="67">c</div>
+        <div class="key" data-key="86">v</div>
+        <div class="key" data-key="66">b</div>
+        <div class="key" data-key="78">n</div>
+        <div class="key" data-key="77">m</div>
       </div>
     </div>
+    <script src="sweetAlert/dist/sweetalert.min.js"></script>
     <script>
-      // Aquí tu código
+      const rondas = 15
+
+      // Array de teclas que el usuario deberá presionar:
+      let keys = generateKeys(rondas)
+
+      function nextRound(level) {
+        // Llegué a la ultima ronda?
+        if ( level == rondas ) return swal("Excelente!", "Ganaste el juego!", "success")
+
+        // Indicamos la nueva ronda:
+        //alert(`Nivel ${level + 1}`)
+        swal({
+          title: `Nivel ${level + 1}`,
+          timer: 1000,
+          showConfirmButton: false
+        });
+
+        // Mostramos las teclas que debe marcar el usuario:
+        for (let i = 0; i <= level; i++) {
+          setTimeout(() => activate(keys[i]), 1100 * (i + 1))
+        }
+
+        // Variable iteradora del array keys
+        let i = 0
+        // Tecla que toca ser pulsada para continuar jugando la ronda
+        let actualKey = keys[i]
+
+        // Event listener para detectar cual tecla pulsan:
+        window.addEventListener('keydown', onKeyDown)
+        function onKeyDown(oEvent) {
+          // Si la tecla pulsada es la tecla que debían pulsar, entonces la activamos con success
+          // y nos movemos a la siguiente ronda:
+          if ( oEvent.keyCode == actualKey ) {
+            activate(actualKey, {success: true})
+            i++
+            // Ya pulsaron todas las teclas?
+            if ( i > level ) {
+              // Quitamos el event listener para que no trollee el usuario:
+              window.removeEventListener('keydown', onKeyDown)
+              // Esperamos un segundo y medio para llamar recursivamente a la función:
+              setTimeout(() => nextRound(i), 1500)
+            }
+            // Si faltan teclas por pulsar en esta ronda, entonces a la tecla actual le asignamos
+            // la siguiente tecla
+            actualKey = keys[i]
+          } else {
+            // Activamos la tecla en modo fail:
+            activate(oEvent.keyCode, {fail: true})
+            // Quitamos el event listener para que no trollee el usuario:
+            window.removeEventListener('keydown', onKeyDown)
+            // Mostramos mensaje de derrota:
+            setTimeout(() => {
+              swal({
+                title:"Perdiste",
+                text: "Quieres jugar de nuevo?",
+                showCancelButton: true,
+                confirmButtonText: "SI",
+                cancelButtonText: "NO",
+                closeOnConfirm: true,
+                closeOnCancel: true
+              }, (oValue) => {
+                if (oValue) {
+                  keys = generateKeys(rondas)
+                  nextRound(0)
+                }
+              })
+            }, 1500)
+          }
+        }
+      }
+
+      // Iniciamos la partida:
+      nextRound(0)
+
+      // Me devuelve el array de teclas aleatorias:
+      function generateKeys(rondas) {
+        return new Array(rondas).fill(0).map(generateRandomKey)
+      }
+
+      // Me devuelve una tecla entre 65 y 90 generada pseudoaleatoriamente:
+      function generateRandomKey() {
+        const min = 65
+        const max = 90
+
+        return Math.round(Math.random() * (max - min)) + min
+      }
+
+      //Me devuelve el elemento HTML osociado al atributo keyCode:
+      function getElementbyDataKey(keyCode) {
+        return document.querySelector(`[data-key="${keyCode}"]`)
+      }
+
+      // Activa la letra indicada por keyCode:
+      function activate(keyCode, options = {}) {
+        const elem = getElementbyDataKey(keyCode)
+        elem.classList.add('active')
+        if (options.success) {
+          elem.classList.add('success')
+        } else if (options.fail) {
+          elem.classList.add('fail')
+        }
+        setTimeout( () => deactivate(elem), 500)
+      }
+
+      // Desactiva la tecla
+      function deactivate(elem) {
+        elem.className = 'key'
+      }
+
     </script>
   </body>
 </html>
